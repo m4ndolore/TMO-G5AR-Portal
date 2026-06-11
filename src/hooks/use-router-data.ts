@@ -195,3 +195,34 @@ export function useTelemetryAll() {
     refreshInterval: 5000,
   })
 }
+
+export interface SignalSample {
+  t: number // epoch milliseconds
+  rsrp: number
+  rsrq: number
+  sinr: number
+  rssi: number
+  bars: number
+  bands: string[]
+  cid: number
+  gnbid: number
+  reg: string
+}
+
+export interface SignalHistoryResponse {
+  hours: number
+  count: number
+  entries: SignalSample[]
+}
+
+// Recorded 5G signal history (polled server-side into a JSONL store).
+export function useSignalHistory(hours: number = 24) {
+  return useSWR<SignalHistoryResponse>(
+    `/api/router/history?hours=${hours}`,
+    fetcher,
+    {
+      refreshInterval: 60000,
+      keepPreviousData: true,
+    }
+  )
+}

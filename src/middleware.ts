@@ -17,6 +17,7 @@ const protectedPages = [
   "/devices",
   "/wifi",
   "/cell",
+  "/history",
   "/system",
 ]
 
@@ -68,6 +69,7 @@ export const config = {
     "/devices",
     "/wifi",
     "/cell",
+    "/history",
     "/system",
     "/api/router/:path*",
   ],
