@@ -41,7 +41,8 @@ Gateway information, system status, and quick actions like reboot.
 - **SIM Info** - ICCID, IMEI, IMSI details
 - **System Controls** - Reboot gateway, view device info and firmware version
 - **Signal History** - Background-recorded RSRP/RSRQ/SINR/RSSI charted over time (1h–7d) to compare antenna placement and track performance
-- **Placement Survey** - Tag samples with the gateway's current spot and compare spots side by side (SINR/RSRP/RSRQ, band, tower)
+- **Placement Survey** - Tag samples with the gateway's current spot and compare spots side by side (SINR/RSRP, stability, band, cell, measured speed), with a live readout for fine positioning
+- **Speed Test** - Server-side download/upload and idle/loaded latency test, stored with the signal and survey spot at the time
 
 ## Tech Stack
 
@@ -107,10 +108,27 @@ Configure via environment variables:
 To find the best spot for the gateway, open **Placement**, type a name for the
 spot, and press **Start recording here**, then move the gateway there. Samples
 are taken every 10 seconds and tagged with that name until you start another
-spot or stop. The comparison table ranks spots by average SINR and skips the
-first 2 minutes of each visit while the gateway reconnects. Run the portal on a
-laptop plugged into the gateway (or on its Wi-Fi) so it keeps reaching the
-gateway as you move it. **Export CSV** downloads every survey sample.
+spot or stop. The comparison table skips the first 2 minutes of each visit
+while the gateway reconnects and ranks spots in this order: stays on the cell
+most samples used, reaches 15 dB average SINR, then RSRP (which sets upload
+speed) plus half the SINR, capped at 25 dB. Spots on another cell are
+highlighted, and the SINR spread column shows how steady each spot is. The
+**Live signal** card refreshes every 3 seconds and compares the current
+reading with the best spot so far, for nudging the gateway within a room. Run
+the portal on a laptop plugged into the gateway (or on its Wi-Fi) so it keeps
+reaching the gateway as you move it. **Export CSV** downloads every survey
+sample.
+
+### Speed test
+
+**Run speed test** on the Placement page measures download and upload with
+four parallel streams against Cloudflare (`speed.cloudflare.com`), and latency
+to 1.1.1.1 while idle and while each direction is saturated. A test takes about
+20 seconds and moves a few hundred MB on a fast link. Results are appended to
+`.data/speed-tests.jsonl` with the signal and survey spot at the time, and the
+comparison table shows each spot's median speeds. The test runs on the
+portal's host, so keep that machine wired to the gateway; over Wi-Fi the
+result measures the Wi-Fi link.
 
 ## Docker
 

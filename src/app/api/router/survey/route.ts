@@ -6,6 +6,7 @@ import {
   readSurveySamples,
   deleteSurveyLocation,
 } from "@/lib/signal-history"
+import { deleteSpeedTests } from "@/lib/speed-test"
 
 export const dynamic = "force-dynamic"
 
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE ?location=X: remove that location's survey samples.
+// DELETE ?location=X: remove that location's survey samples and speed tests.
 export async function DELETE(request: NextRequest) {
   const location = request.nextUrl.searchParams.get("location")
   if (!location) {
@@ -47,7 +48,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    await deleteSurveyLocation(location)
+    await Promise.all([deleteSurveyLocation(location), deleteSpeedTests(location)])
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error("Survey API error:", error)
