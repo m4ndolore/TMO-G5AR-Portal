@@ -139,7 +139,7 @@ export default function SurveyPage() {
   const visitSamples = active ? entries.filter((e) => e.visit === active.since) : []
   const latest = visitSamples[visitSamples.length - 1]
   const settleLeft = visitSamples.length
-    ? SETTLE_MS - (Date.now() - visitSamples[0].t)
+    ? SETTLE_MS - (latest.t - visitSamples[0].t)
     : SETTLE_MS
   const online = health?.status === "online"
 

@@ -23,7 +23,7 @@ const protectedPages = [
   "/system",
 ]
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const authToken = request.cookies.get("auth_token")?.value
 
@@ -60,7 +60,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match only specific paths that need middleware:
+     * Match only specific paths that need the proxy:
      * - / (home)
      * - /login
      * - /devices, /wifi, /cell, /system (dashboard pages)

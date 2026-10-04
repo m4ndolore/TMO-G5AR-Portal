@@ -22,6 +22,7 @@ export default function LoginPage() {
   useEffect(() => {
     const savedIp = localStorage.getItem("router_ip")
     if (savedIp) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after hydration
       setRouterIp(savedIp)
     }
 
@@ -62,7 +63,7 @@ export default function LoginPage() {
       } else {
         setError(data.error || "Login failed")
       }
-    } catch (err) {
+    } catch {
       setError("Connection failed. Is the gateway reachable?")
     } finally {
       setLoading(false)

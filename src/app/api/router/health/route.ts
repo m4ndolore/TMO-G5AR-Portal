@@ -9,7 +9,7 @@ export async function GET() {
   // background signal recording as soon as the portal is opened.
   ensurePoller()
 
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const routerIp = cookieStore.get("router_ip")?.value || DEFAULT_ROUTER_IP
 
   try {
