@@ -241,3 +241,31 @@ export function useSurvey() {
     keepPreviousData: true,
   })
 }
+
+export interface SpeedTestResult {
+  t: number
+  downMbps: number
+  upMbps: number
+  idleMs: number
+  loadedDownMs: number
+  loadedUpMs: number
+  loadedP90Ms: number
+  probeLoss: number
+  colo: string
+  signal?: { rsrp: number; rsrq: number; sinr: number; bands: string[]; gnbid: number; cid: number }
+  loc?: string
+  visit?: number
+}
+
+export interface SpeedTestsResponse {
+  running: boolean
+  results: SpeedTestResult[]
+}
+
+// Stored speed tests (run server-side, tagged with the survey location).
+export function useSpeedTests() {
+  return useSWR<SpeedTestsResponse>("/api/router/speedtest", fetcher, {
+    refreshInterval: 10000,
+    keepPreviousData: true,
+  })
+}
