@@ -26,6 +26,8 @@ export interface SignalSample {
   cid: number
   gnbid: number
   reg: string // registration state
+  loc?: string // placement-survey location label, when a survey was active
+  visit?: number // epoch ms the survey location was started (groups one visit)
 }
 
 function routerIp(): string {
@@ -37,6 +39,9 @@ function routerIp(): string {
 export async function fetchSignalSample(): Promise<SignalSample | null> {
   const res = await fetch(`http://${routerIp()}/TMI/v1/gateway?get=all`, {
     cache: "no-store",
+    // The gateway goes dark while it reboots after being moved; don't let a
+    // hung request stall the poller.
+    signal: AbortSignal.timeout(5000),
   })
   if (!res.ok) return null
 
@@ -96,9 +101,15 @@ async function maybePrune(): Promise<void> {
 
 // Poll the gateway once and append the sample. Returns the sample, or null if
 // the gateway was unreachable / returned no 5G data.
-export async function recordSample(): Promise<SignalSample | null> {
+export async function recordSample(
+  survey?: SurveyState | null
+): Promise<SignalSample | null> {
   const sample = await fetchSignalSample()
   if (!sample) return null
+  if (survey) {
+    sample.loc = survey.location
+    sample.visit = survey.since
+  }
 
   await fs.mkdir(DATA_DIR, { recursive: true })
   await fs.appendFile(FILE, JSON.stringify(sample) + "\n", "utf8")
@@ -112,6 +123,62 @@ export async function readHistory(sinceMs: number): Promise<SignalSample[]> {
   return all.filter((e) => e.t >= sinceMs)
 }
 
+// ── Placement survey ───────────────────────────────────────────────────────
+// While a survey location is set, every recorded sample is tagged with it and
+// the poller samples faster, so moving the gateway room to room produces a
+// per-location comparison. The active location is persisted so a server
+// restart mid-survey keeps tagging. Kept on globalThis because Next.js can load
+// this module once per route bundle.
+
+export interface SurveyState {
+  location: string
+  since: number // epoch ms
+}
+
+const SURVEY_FILE = path.join(DATA_DIR, "survey-state.json")
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __surveyState: SurveyState | null | undefined
+}
+
+export async function getSurveyState(): Promise<SurveyState | null> {
+  if (globalThis.__surveyState === undefined) {
+    try {
+      globalThis.__surveyState = JSON.parse(await fs.readFile(SURVEY_FILE, "utf8"))
+    } catch {
+      globalThis.__surveyState = null
+    }
+  }
+  return globalThis.__surveyState ?? null
+}
+
+export async function setSurveyLocation(location: string | null): Promise<SurveyState | null> {
+  const state = location ? { location, since: Date.now() } : null
+  globalThis.__surveyState = state
+  await fs.mkdir(DATA_DIR, { recursive: true })
+  if (state) {
+    await fs.writeFile(SURVEY_FILE, JSON.stringify(state), "utf8")
+  } else {
+    await fs.rm(SURVEY_FILE, { force: true })
+  }
+  return state
+}
+
+// All samples recorded during a survey, oldest first.
+export async function readSurveySamples(): Promise<SignalSample[]> {
+  const all = await readAll()
+  return all.filter((e) => e.loc)
+}
+
+// Drop one location's survey samples (e.g. a mislabeled spot).
+export async function deleteSurveyLocation(location: string): Promise<void> {
+  const all = await readAll()
+  const kept = all.filter((e) => e.loc !== location)
+  if (kept.length === all.length) return
+  await fs.writeFile(FILE, kept.map((e) => JSON.stringify(e)).join("\n") + "\n", "utf8")
+}
+
 // ── Background poller ──────────────────────────────────────────────────────
 // A process-wide singleton interval that records a sample on a fixed cadence.
 // We arm it lazily from the Node.js API routes (rather than an instrumentation
@@ -122,6 +189,8 @@ export async function readHistory(sinceMs: number): Promise<SignalSample[]> {
 //
 // Env vars:
 //   SIGNAL_POLL_INTERVAL_MS   poll cadence in ms  (default 60000)
+//   SIGNAL_SURVEY_INTERVAL_MS poll cadence while a survey location is set
+//                             (default 10000)
 //   SIGNAL_HISTORY_DISABLED   set to "1" to disable
 
 declare global {
@@ -134,16 +203,30 @@ export function ensurePoller(): void {
   if (globalThis.__signalPoller) return // already armed in this process
 
   const intervalMs = Number(process.env.SIGNAL_POLL_INTERVAL_MS) || 60000
+  const surveyMs = Number(process.env.SIGNAL_SURVEY_INTERVAL_MS) || 10000
 
+  // Tick at the faster cadence and skip until the active cadence is due, so
+  // starting a survey speeds up sampling without re-arming the interval.
+  let last = 0
+  let busy = false
   const tick = async () => {
+    if (busy) return
+    busy = true
     try {
-      await recordSample()
+      const survey = await getSurveyState()
+      const due = survey ? surveyMs : intervalMs
+      if (Date.now() - last >= due - 500) {
+        last = Date.now()
+        await recordSample(survey)
+      }
     } catch (err) {
       console.error("[signal-history] poll failed:", err)
+    } finally {
+      busy = false
     }
   }
 
-  globalThis.__signalPoller = setInterval(tick, intervalMs)
+  globalThis.__signalPoller = setInterval(tick, Math.min(intervalMs, surveyMs))
   void tick() // record immediately on first arm
   console.log(`[signal-history] polling gateway every ${intervalMs}ms`)
 }

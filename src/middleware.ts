@@ -9,6 +9,7 @@ const protectedApiRoutes = [
   "/api/router/ap",
   "/api/router/telemetry",
   "/api/router/reboot",
+  "/api/router/survey",
 ]
 
 // Dashboard pages that require authentication
@@ -18,6 +19,7 @@ const protectedPages = [
   "/wifi",
   "/cell",
   "/history",
+  "/survey",
   "/system",
 ]
 
@@ -70,6 +72,7 @@ export const config = {
     "/wifi",
     "/cell",
     "/history",
+    "/survey",
     "/system",
     "/api/router/:path*",
   ],
