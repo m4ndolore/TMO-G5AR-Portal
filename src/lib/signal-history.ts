@@ -138,7 +138,6 @@ export interface SurveyState {
 const SURVEY_FILE = path.join(DATA_DIR, "survey-state.json")
 
 declare global {
-  // eslint-disable-next-line no-var
   var __surveyState: SurveyState | null | undefined
 }
 
@@ -181,9 +180,7 @@ export async function deleteSurveyLocation(location: string): Promise<void> {
 
 // ── Background poller ──────────────────────────────────────────────────────
 // A process-wide singleton interval that records a sample on a fixed cadence.
-// We arm it lazily from the Node.js API routes (rather than an instrumentation
-// hook) because middleware forces instrumentation into the edge runtime, where
-// `fs` is unavailable. Calling ensurePoller() repeatedly is safe — it starts at
+// We arm it lazily from the Node.js API routes, where `fs` is available. Calling ensurePoller() repeatedly is safe — it starts at
 // most one interval per server process. Once armed it keeps recording for the
 // life of the process, even with no browser open.
 //
@@ -194,7 +191,6 @@ export async function deleteSurveyLocation(location: string): Promise<void> {
 //   SIGNAL_HISTORY_DISABLED   set to "1" to disable
 
 declare global {
-  // eslint-disable-next-line no-var
   var __signalPoller: NodeJS.Timeout | undefined
 }
 

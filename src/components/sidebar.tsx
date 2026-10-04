@@ -42,6 +42,7 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
 
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains("dark")
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- DOM and localStorage are only readable after hydration
     setIsDark(isDarkMode)
 
     // Load collapsed state from localStorage
