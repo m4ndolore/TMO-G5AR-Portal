@@ -9,6 +9,8 @@ import {
   Wifi,
   Smartphone,
   Radio,
+  LineChart,
+  MapPin,
   Settings,
   LogOut,
   Moon,
@@ -23,6 +25,8 @@ const navItems = [
   { href: "/devices", label: "Devices", icon: Smartphone },
   { href: "/wifi", label: "WiFi", icon: Wifi },
   { href: "/cell", label: "Cell Info", icon: Radio },
+  { href: "/history", label: "History", icon: LineChart },
+  { href: "/survey", label: "Placement", icon: MapPin },
   { href: "/system", label: "System", icon: Settings },
 ]
 

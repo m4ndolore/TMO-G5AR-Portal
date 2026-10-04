@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { ensurePoller } from "@/lib/signal-history"
 
 const DEFAULT_ROUTER_IP = "192.168.12.1"
 
 export async function GET() {
+  // The dashboard polls health app-wide, so this is a reliable place to start
+  // background signal recording as soon as the portal is opened.
+  ensurePoller()
+
   const cookieStore = cookies()
   const routerIp = cookieStore.get("router_ip")?.value || DEFAULT_ROUTER_IP
 
