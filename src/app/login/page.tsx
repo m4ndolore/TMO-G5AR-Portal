@@ -35,8 +35,20 @@ export default function LoginPage() {
     }
   }, [])
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    // Read the live fields. A password manager can fill the DOM without
+    // updating React state, and state would otherwise submit an empty password.
+    const submitted = new FormData(e.currentTarget)
+    const submittedIp = String(submitted.get("routerIp") ?? routerIp).trim()
+    const submittedUsername = String(submitted.get("username") ?? username).trim()
+    const submittedPassword = String(submitted.get("password") ?? "")
+
+    if (!submittedPassword) {
+      setError("Enter the gateway admin password.")
+      return
+    }
+
     setLoading(true)
     setError("")
 
@@ -44,18 +56,22 @@ export default function LoginPage() {
       const response = await fetch("/api/router/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, routerIp }),
+        body: JSON.stringify({
+          username: submittedUsername,
+          password: submittedPassword,
+          routerIp: submittedIp,
+        }),
       })
 
       const data = await response.json()
 
       if (data.success) {
         // Save router IP
-        localStorage.setItem("router_ip", routerIp)
+        localStorage.setItem("router_ip", submittedIp)
 
         // Save or clear remembered username
         if (rememberUsername) {
-          localStorage.setItem("remembered_username", username)
+          localStorage.setItem("remembered_username", submittedUsername)
         } else {
           localStorage.removeItem("remembered_username")
         }
@@ -105,10 +121,12 @@ export default function LoginPage() {
                 <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   id="routerIp"
+                  name="routerIp"
                   type="text"
                   value={routerIp}
                   onChange={(e) => setRouterIp(e.target.value)}
                   placeholder="192.168.12.1"
+                  autoComplete="on"
                   className="h-12 pl-12 rounded-xl bg-white/50 dark:bg-white/5 border-white/20"
                 />
               </div>
@@ -120,10 +138,12 @@ export default function LoginPage() {
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   id="username"
+                  name="username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="admin"
+                  autoComplete="username"
                   className="h-12 pl-12 rounded-xl bg-white/50 dark:bg-white/5 border-white/20"
                 />
               </div>
@@ -135,10 +155,12 @@ export default function LoginPage() {
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
+                  autoComplete="current-password"
                   className="h-12 pl-12 pr-12 rounded-xl bg-white/50 dark:bg-white/5 border-white/20"
                 />
                 <button
