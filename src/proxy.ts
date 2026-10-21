@@ -11,6 +11,7 @@ const protectedApiRoutes = [
   "/api/router/reboot",
   "/api/router/survey",
   "/api/router/speedtest",
+  "/api/router/admin-reset",
 ]
 
 // Dashboard pages that require authentication

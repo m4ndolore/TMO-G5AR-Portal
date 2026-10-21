@@ -41,11 +41,14 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
   const [isCollapsed, setIsCollapsed] = useState(collapsed)
 
   useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains("dark")
+    const savedDark = localStorage.getItem("dark-mode")
+    const isDarkMode = savedDark !== null
+      ? savedDark === "true"
+      : document.documentElement.classList.contains("dark")
     // eslint-disable-next-line react-hooks/set-state-in-effect -- DOM and localStorage are only readable after hydration
     setIsDark(isDarkMode)
+    document.documentElement.classList.toggle("dark", isDarkMode)
 
-    // Load collapsed state from localStorage
     const savedCollapsed = localStorage.getItem("sidebar-collapsed")
     if (savedCollapsed !== null) {
       const newCollapsed = savedCollapsed === "true"
@@ -55,8 +58,10 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
   }, [onCollapsedChange])
 
   const toggleDarkMode = () => {
-    document.documentElement.classList.toggle("dark")
-    setIsDark(!isDark)
+    const newDark = !isDark
+    document.documentElement.classList.toggle("dark", newDark)
+    setIsDark(newDark)
+    localStorage.setItem("dark-mode", String(newDark))
   }
 
   const toggleCollapsed = () => {

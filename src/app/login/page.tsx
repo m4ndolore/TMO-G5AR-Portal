@@ -20,6 +20,11 @@ export default function LoginPage() {
 
   // Load saved settings on mount
   useEffect(() => {
+    const savedDark = localStorage.getItem("dark-mode")
+    if (savedDark !== null) {
+      document.documentElement.classList.toggle("dark", savedDark === "true")
+    }
+
     const savedIp = localStorage.getItem("router_ip")
     if (savedIp) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after hydration
